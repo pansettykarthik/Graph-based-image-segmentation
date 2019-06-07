@@ -1,0 +1,79 @@
+im = imread('image.jpg');
+[l, Am, C] = slic(im, 500, 10, 1, 'median');
+[n e] = imRAG(l);
+imshow(drawregionboundaries(l, im, [255 255 255]))
+hold on;
+for i = 1:size(e, 1)
+    plot(n(e(i,:), 1), n(e(i,:), 2), 'linewidth', 2, 'color', 'g');
+end
+plot(n(:,1), n(:,2), 'bo');
+
+---------------------------------------------------------------
+
+[features,validPoints] = extractFeatures(l,n,'Method','SURF');
+
+---------------------------------------------------------------
+Actual code starts here:
+
+im = imread('2007_000243.jpg');
+[l, Am, C] = slic(im, 200, 10, 1, 'median');
+[n e] = imRAG(l);
+alpha = 0.5;
+thresh = 0.5;
+p = rgb2gray(im);
+
+[features,validPoints] = extractFeatures(p,n,'Method','SURF');
+
+W = zeros(length(C),length(C));
+H = zeros(length(C),length(C));
+W1 = zeros(length(C),length(C));
+W2 = zeros(length(C),length(C));
+
+for i =1:1:length(C)
+	for j =1:1:length(C)
+		if Am(i,j)==1
+			W1(i,j) = exp(-(((C(i).L-C(j).L)^2 + (C(i).a-C(j).a)^2 + (C(i).b-C(j).b)^2))/2*(0.1*0.1));
+			W2(i,j) = exp(-(norm(features(i,:)-features(j,:)))^2/2*(0.1*0.1));
+			H(i,j) = alpha*W1(i,j) + (1-alpha)*W2(i,j);
+			W(i,j) = alpha*W1(i,j) + (1-alpha)*W2(i,j);
+			if W(i,j)<thresh
+				H(i,j) = 0;
+			end
+		end
+	end
+end
+
+G = gsp_graph(H)
+G.directed = 0
+G.coords = n
+gsp_plot_graph(G)
+
+--------------------------------------------------------------
+
+imshow(drawregionboundaries(l, im, [255 255 255]))
+
+hold on;
+for i = 1:size(e, 1)
+    plot(n(e(i,:), 1), n(e(i,:), 2), 'linewidth', 2, 'color', 'g');
+end
+plot(n(:,1), n(:,2), 'bo');
+
+-----------------------------------------------------------
+im = imread('image.jpg');
+[l, Am, C] = slic(im, 500, 10, 1, 'median');
+[n e] = imRAG(l);
+W = zeros(length(C),length(C));
+for i =1:1:length(C)
+	for j =i:1:length(C)
+		if Am(i,j)==1
+			W(i,j) = exp(-(((C(i).L-C(j).L)^2 + (C(i).a-C(j).a)^2 + (C(i).b-C(j).b)^2))/2*(0.1*0.1));
+		end
+	end
+end
+
+G = gsp_graph(W)
+G.directed = 0
+G.coords = n
+gsp_plot_graph(G)
+
+--------------------------------------------------------------
